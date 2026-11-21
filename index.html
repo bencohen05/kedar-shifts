@@ -2,15 +2,57 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>סידור משמרות – ש.ג קדר</title>
 <meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#2f74c0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="משמרות קדר">
 <style>
-html,body{margin:0;height:100%;background:#f4f7fb}
-iframe{position:fixed;inset:0;width:100%;height:100%;border:0}
+html,body{margin:0;height:100%;background:#f4f7fb;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+#bar{position:fixed;top:0;left:0;right:0;z-index:2;background:#0f1f33;color:#fff;display:none;align-items:center;gap:8px;padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top));font-size:14px;line-height:1.35}
+#bar button{border:0;border-radius:8px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+#on{background:#f59e0b;color:#0f1f33}
+#x{background:transparent;color:#fff;margin-inline-start:auto;font-size:18px;padding:4px 8px}
+iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:var(--top,0px);height:calc(100% - var(--top,0px))}
 </style>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
-<iframe src="https://script.google.com/macros/s/AKfycbw3yhjsE-K-9skiV0qIlDxxBVFkgMgMPb1zdwuB6zb6NKcxY446XGYBYRUa95P-WlVe/exec" title="סידור משמרות – ש.ג קדר" allow="clipboard-write"></iframe>
+<div id="bar"><span id="msg"></span><button id="on">הפעלת התראות</button><button id="x" aria-label="סגירה">✕</button></div>
+<iframe src="https://script.google.com/macros/s/AKfycbw3yhjsE-K-9skiV0qIlDxxBVFkgMgMPb1zdwuB6zb6NKcxY446XGYBYRUa95P-WlVe/exec" title="סידור משמרות – ש.ג קדר" allow="clipboard-write; web-share"></iframe>
+<script>
+var bar=document.getElementById('bar'), msg=document.getElementById('msg'), on=document.getElementById('on');
+var isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
+var standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+var dismissed=false; try{ dismissed=localStorage.getItem('bell_x')==='1'; }catch(e){}
+function setTop(){ document.documentElement.style.setProperty('--top', bar.style.display==='flex' ? bar.offsetHeight+'px' : '0px'); }
+function show(t,btn){ msg.textContent=t; on.style.display=btn?'':'none'; bar.style.display='flex'; setTop(); }
+function hide(){ bar.style.display='none'; setTop(); }
+document.getElementById('x').onclick=function(){ try{ localStorage.setItem('bell_x','1'); }catch(e){} hide(); };
+window.addEventListener('resize',setTop);
+window.OneSignalDeferred=window.OneSignalDeferred||[];
+OneSignalDeferred.push(async function(OneSignal){
+  await OneSignal.init({
+    appId:"67143b7b-30a4-474d-9136-09f715fea0b3",
+    serviceWorkerPath:"kedar-shifts/OneSignalSDKWorker.js",
+    serviceWorkerParam:{scope:"/kedar-shifts/"}
+  });
+  var subbed=function(){ return OneSignal.User.PushSubscription.optedIn; };
+  if(subbed() || dismissed) return;
+  if(isIOS && !standalone){ show('🔔 להתראות באייפון: כפתור שיתוף ← "הוסף למסך הבית", ופותחים משם', false); return; }
+  if(!OneSignal.Notifications.isPushSupported()) return;
+  show('🔔 תזכורת להגשה והודעה כשהסידור יוצא', true);
+  on.onclick=async function(){
+    try{ await OneSignal.User.PushSubscription.optIn(); }catch(e){}
+    setTimeout(function(){
+      if(subbed()){ show('✅ ההתראות הופעלו', false); setTimeout(hide,2500); }
+      else if(window.Notification && Notification.permission==='denied'){ show('ההתראות חסומות – אפשר לאשר בהגדרות האתר בדפדפן', false); }
+    },800);
+  };
+});
+</script>
 </body>
 </html>
